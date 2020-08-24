@@ -102,6 +102,12 @@
       <div class="action">
         <button class="actionButton" v-on:click="luckData">手气不错</button>
         <button class="actionButton" v-on:click="loadData">重置</button>
+        <button class="actionButton" v-on:click="loadNextDay">
+          {{nextDay}}
+        </button>
+        <button class="actionButton" v-on:click="loadPrevDay">
+          {{prevDay}}
+        </button>
       </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
@@ -156,27 +162,47 @@
               bad: "请稍候...",
             },
           ],
+          offset: 0,
+        },
+        computed: {
+          nextDay: function () {
+            return this.fomart(this.offset + 1);
+          },
+          prevDay: function () {
+            return this.fomart(this.offset - 1);
+          },
         },
         methods: {
+          fomart(t) {
+            if (t > 0) return "+" + t + "天";
+            else if (t < 0) return t + "天";
+            else return "今天";
+          },
           async getData() {
             let response = await fetch("/lunch.json");
             let data = await response.json();
             return data;
           },
-          async loadData() {
+          async setData(seed) {
             let data = await this.getData();
-            let [a, b, c, d] = randomFour(
-              data.length,
-              new Date().getTime() / 86400000,
-            );
+            let [a, b, c, d] = randomFour(data.length, seed);
             this.goods = [data[a], data[b]];
             this.bads = [data[c], data[d]];
           },
+          async loadData() {
+            this.offset = 0;
+            await this.setData(new Date().getTime() / 86400000);
+          },
           async luckData() {
-            let data = await this.getData();
-            let [a, b, c, d] = randomFour(data.length, new Date().getTime());
-            this.goods = [data[a], data[b]];
-            this.bads = [data[c], data[d]];
+            await this.setData(new Date().getTime());
+          },
+          async loadNextDay() {
+            this.offset = this.offset + 1;
+            await this.setData(new Date().getTime() / 86400000 + this.offset);
+          },
+          async loadPrevDay() {
+            this.offset = this.offset - 1;
+            await this.setData(new Date().getTime() / 86400000 - this.offset);
           },
         },
         async mounted() {
